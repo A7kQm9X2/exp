@@ -1,1 +1,579 @@
+:root{
+  --ink:#1f2a33;
+  --wall:#f4f8fb;
+  --card:#ffffff;
+  --shadow: 0 18px 60px rgba(0,0,0,.12);
+}
 
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  color:var(--ink);
+  background: var(--wall);
+}
+
+.stage{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  opacity:1;
+  transition: opacity 600ms ease;
+}
+.stage.is-loading{opacity:0;}
+.scene{ width:min(1200px, 96vw); }
+
+/* HUD */
+.hud{ position:fixed; z-index:10; }
+.hud-left{ inset:18px auto auto 18px; }
+
+.hud-row{ display:flex; align-items:center; gap:12px; }
+
+.counter{
+  background: rgba(255,255,255,.82);
+  border: 2px solid rgba(31,42,51,.25);
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight:900;
+  letter-spacing:.5px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  user-select:none;
+  transform: translateZ(0);
+}
+.counter.bump{
+  transform: scale(1.05);
+  transition: transform 140ms ease;
+}
+
+.drink{
+  width:56px;
+  height:56px;
+  background: rgba(255,255,255,.82);
+  border: 2px solid rgba(31,42,51,.18);
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+
+/* prompt */
+.prompt{
+  position:fixed;
+  right:18px;
+  top:18px;
+  z-index:10;
+  display:none;
+}
+.prompt.show{display:block;}
+.prompt-card{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background: rgba(255,255,255,.85);
+  border: 2px solid rgba(31,42,51,.18);
+  border-radius: 999px;
+  padding: 10px 12px 10px 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+.prompt-text{ font-weight:900; letter-spacing:.2px; }
+.prompt-x{
+  border:0;
+  background: rgba(31,42,51,.08);
+  color: var(--ink);
+  width:34px;
+  height:34px;
+  border-radius: 999px;
+  cursor:pointer;
+  font-size:14px;
+}
+
+/* click affordance */
+#fridge, #shelves, #upper-right-cab { cursor:pointer; }
+#fridge:hover, #shelves:hover, #upper-right-cab:hover{
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,.10));
+}
+
+/* overlay */
+.overlay{
+  position:fixed;
+  inset:0;
+  background: rgba(31,42,51,.35);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  z-index:20;
+}
+.overlay.open{display:flex;}
+
+.panel{
+  width:min(720px, 96vw);
+  background: var(--card);
+  border-radius: 22px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+  border: 2px solid rgba(31,42,51,.15);
+  position:relative;
+}
+.close{
+  position:absolute;
+  top:10px;
+  right:10px;
+  border:0;
+  background: rgba(31,42,51,.08);
+  color: var(--ink);
+  width:38px;
+  height:38px;
+  border-radius: 12px;
+  cursor:pointer;
+  font-size:16px;
+}
+.panel-title{
+  font-weight:900;
+  font-size:18px;
+  padding: 6px 6px 12px 6px;
+}
+.grid{ display:grid; gap:10px; padding: 6px; }
+.grid-2{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.item{
+  border:2px solid rgba(31,42,51,.18);
+  background: rgba(244,248,251,.9);
+  border-radius: 16px;
+  padding: 14px 10px;
+  cursor:pointer;
+  font-weight:900;
+}
+.item:active{transform: translateY(1px);}
+.item.found{
+  opacity:.45;
+  text-decoration: line-through;
+  cursor:default;
+}
+.panel-foot{
+  opacity:.75;
+  font-size:13px;
+  padding: 12px 6px 0 6px;
+}
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kitchen Exp</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- HUD (top-left) -->
+  <div class="hud hud-left">
+    <div class="hud-row">
+      <div id="counter" class="counter" aria-label="progress">0 / 4</div>
+
+      <!-- Drink assembly icon -->
+      <svg id="drinkIcon" class="drink" viewBox="0 0 120 120" aria-label="drink progress" role="img">
+        <!-- glass outline -->
+        <path d="M35 20h50l-6 78c-.4 5-4.6 9-9.6 9H50.6c-5 0-9.2-4-9.6-9L35 20z"
+              fill="none" stroke="#1f2a33" stroke-width="6" stroke-linejoin="round"/>
+        <line x1="30" y1="20" x2="90" y2="20" stroke="#1f2a33" stroke-width="6" stroke-linecap="round"/>
+
+        <!-- ICE -->
+        <g id="drink-ice" opacity="0">
+          <rect x="46" y="52" width="16" height="16" rx="4" fill="#cfe3f1" stroke="#1f2a33" stroke-width="4"/>
+          <rect x="62" y="58" width="16" height="16" rx="4" fill="#cfe3f1" stroke="#1f2a33" stroke-width="4"/>
+          <rect x="52" y="70" width="16" height="16" rx="4" fill="#cfe3f1" stroke="#1f2a33" stroke-width="4"/>
+        </g>
+
+        <!-- LIQUID (tequila / then topped up by soda water) -->
+        <path id="drink-liquid"
+              d="M44 88h32l-1 10H45z"
+              fill="#d9e7f2" opacity="0"/>
+
+        <!-- BUBBLES (soda water) -->
+        <g id="drink-bubbles" opacity="0" fill="#1f2a33">
+          <circle cx="54" cy="60" r="2.5"/>
+          <circle cx="70" cy="66" r="2.5"/>
+          <circle cx="62" cy="76" r="2.5"/>
+          <circle cx="74" cy="78" r="2.5"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Soft prompt -->
+  <div id="prompt" class="prompt" aria-hidden="true">
+    <div class="prompt-card">
+      <div class="prompt-text">make a drink</div>
+      <button id="dismissPrompt" class="prompt-x" aria-label="dismiss">✕</button>
+    </div>
+  </div>
+
+  <!-- MAIN STAGE -->
+  <main id="stage" class="stage is-loading">
+    <div class="scene" aria-label="kitchen scene">
+      <svg id="kitchenSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="1200" height="700" role="img">
+        <defs>
+          <style>
+            .stroke{stroke:#1f2a33;stroke-width:6;stroke-linejoin:round;stroke-linecap:round}
+            .wall{fill:#f4f8fb}
+            .floor{fill:#e6eff6}
+            .counter{fill:#d9e7f2}
+            .cab{fill:#ffffff}
+            .appliance{fill:#ffffff}
+            .accent{fill:#cfe3f1}
+            .glass{fill:#eaf4fb}
+            .shelf{fill:#ffffff}
+            .drawer{fill:#ffffff}
+            .pull{fill:#1f2a33}
+          </style>
+        </defs>
+
+        <!-- background -->
+        <rect x="0" y="0" width="1200" height="700" class="wall"/>
+        <rect x="0" y="520" width="1200" height="180" class="floor"/>
+
+        <!-- countertop -->
+        <rect x="180" y="360" width="820" height="70" rx="14" class="counter stroke"/>
+
+        <!-- fridge (2 ice, 4 soda water) -->
+        <g id="fridge" tabindex="0" role="button" aria-label="fridge">
+          <rect x="60" y="220" width="120" height="300" rx="16" class="appliance stroke"/>
+          <line x1="60" y1="340" x2="180" y2="340" class="stroke"/>
+          <rect x="160" y="260" width="12" height="55" rx="6" fill="#1f2a33"/>
+          <rect x="160" y="380" width="12" height="95" rx="6" fill="#1f2a33"/>
+        </g>
+
+        <!-- oven / stove -->
+        <g id="stove">
+          <rect x="200" y="420" width="160" height="100" rx="14" class="appliance stroke"/>
+          <rect x="205" y="390" width="150" height="40" rx="10" class="appliance stroke"/>
+          <circle cx="230" cy="410" r="10" fill="#1f2a33"/>
+          <circle cx="280" cy="410" r="10" fill="#1f2a33"/>
+          <circle cx="330" cy="410" r="10" fill="#1f2a33"/>
+          <rect x="220" y="440" width="120" height="65" rx="10" class="accent stroke"/>
+          <rect x="265" y="432" width="30" height="10" rx="5" fill="#1f2a33"/>
+        </g>
+
+        <!-- low cabinet 1 -->
+        <g id="cabinet1">
+          <rect x="380" y="430" width="170" height="90" rx="12" class="cab stroke"/>
+          <line x1="465" y1="430" x2="465" y2="520" class="stroke"/>
+          <circle cx="440" cy="475" r="6" fill="#1f2a33"/>
+          <circle cx="490" cy="475" r="6" fill="#1f2a33"/>
+        </g>
+
+        <!-- drawers above low cabinet 1 -->
+        <g id="drawers-cab1">
+          <rect x="380" y="400" width="170" height="28" rx="10" class="drawer stroke"/>
+          <rect x="422" y="412" width="30" height="6" rx="3" class="pull"/>
+          <rect x="478" y="412" width="30" height="6" rx="3" class="pull"/>
+        </g>
+
+        <!-- low cabinet 2 -->
+        <g id="cabinet2">
+          <rect x="560" y="430" width="170" height="90" rx="12" class="cab stroke"/>
+          <line x1="645" y1="430" x2="645" y2="520" class="stroke"/>
+          <circle cx="620" cy="475" r="6" fill="#1f2a33"/>
+          <circle cx="670" cy="475" r="6" fill="#1f2a33"/>
+        </g>
+
+        <!-- drawers above low cabinet 2 -->
+        <g id="drawers-cab2">
+          <rect x="560" y="400" width="170" height="28" rx="10" class="drawer stroke"/>
+          <rect x="602" y="412" width="30" height="6" rx="3" class="pull"/>
+          <rect x="658" y="412" width="30" height="6" rx="3" class="pull"/>
+        </g>
+
+        <!-- sink -->
+        <g id="sink">
+          <rect x="740" y="370" width="200" height="50" rx="10" class="appliance stroke"/>
+          <rect x="760" y="382" width="160" height="26" rx="8" class="accent stroke"/>
+          <path d="M830 350c0-25 40-25 40 0v18" fill="none" class="stroke"/>
+          <circle cx="850" cy="372" r="6" fill="#1f2a33"/>
+        </g>
+
+        <!-- window -->
+        <g id="window">
+          <rect x="720" y="170" width="240" height="120" rx="14" class="glass stroke"/>
+          <line x1="840" y1="170" x2="840" y2="290" class="stroke"/>
+          <line x1="720" y1="230" x2="960" y2="230" class="stroke"/>
+        </g>
+
+        <!-- bird -->
+        <g id="bird" fill="#1f2a33" opacity="0.9">
+          <path d="M0 0c10-8 18-8 28 0-8-4-14 0-14 6 0-6-6-10-14-6z"/>
+        </g>
+
+        <!-- shelves (1 cup) -->
+        <g id="shelves" tabindex="0" role="button" aria-label="shelves">
+          <rect x="980" y="170" width="160" height="350" rx="12" class="shelf stroke"/>
+          <line x1="980" y1="240" x2="1140" y2="240" class="stroke"/>
+          <line x1="980" y1="310" x2="1140" y2="310" class="stroke"/>
+          <line x1="980" y1="380" x2="1140" y2="380" class="stroke"/>
+          <line x1="980" y1="450" x2="1140" y2="450" class="stroke"/>
+        </g>
+
+        <!-- high cabinets (upper-right is 3 tequila) -->
+        <g id="high-cabs">
+          <g id="upper-left">
+            <rect x="220" y="160" width="200" height="110" rx="12" class="cab stroke"/>
+            <line x1="320" y1="160" x2="320" y2="270" class="stroke"/>
+            <circle cx="295" cy="215" r="6" fill="#1f2a33"/>
+            <circle cx="345" cy="215" r="6" fill="#1f2a33"/>
+          </g>
+
+          <g id="upper-right-cab" tabindex="0" role="button" aria-label="upper cabinet">
+            <rect x="440" y="160" width="200" height="110" rx="12" class="cab stroke"/>
+            <line x1="540" y1="160" x2="540" y2="270" class="stroke"/>
+            <circle cx="515" cy="215" r="6" fill="#1f2a33"/>
+            <circle cx="565" cy="215" r="6" fill="#1f2a33"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+  </main>
+
+  <!-- OVERLAY: FRIDGE (ice + soda water) -->
+  <div id="overlayFridge" class="overlay" aria-hidden="true">
+    <div class="panel" role="dialog" aria-modal="true" aria-label="fridge view">
+      <button class="close" data-close="overlayFridge" aria-label="close">✕</button>
+      <div class="panel-title">Fridge</div>
+
+      <div class="grid grid-2">
+        <button class="item" data-item="ice">Ice</button>
+        <button class="item" data-item="soda">Soda water</button>
+      </div>
+
+      <div class="panel-foot">tap to collect • close to return</div>
+    </div>
+  </div>
+
+  <!-- OVERLAY: SHELVES (cup) -->
+  <div id="overlayShelves" class="overlay" aria-hidden="true">
+    <div class="panel" role="dialog" aria-modal="true" aria-label="shelves view">
+      <button class="close" data-close="overlayShelves" aria-label="close">✕</button>
+      <div class="panel-title">Shelves</div>
+
+      <div class="grid grid-2">
+        <button class="item" data-item="cup">Cup</button>
+      </div>
+
+      <div class="panel-foot">tap to collect • close to return</div>
+    </div>
+  </div>
+
+  <!-- OVERLAY: UPPER RIGHT CABINET (tequila) -->
+  <div id="overlayUpperCab" class="overlay" aria-hidden="true">
+    <div class="panel" role="dialog" aria-modal="true" aria-label="upper cabinet view">
+      <button class="close" data-close="overlayUpperCab" aria-label="close">✕</button>
+      <div class="panel-title">Cabinet</div>
+
+      <div class="grid grid-2">
+        <button class="item" data-item="tequila">Tequila</button>
+      </div>
+
+      <div class="panel-foot">tap to collect • close to return</div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+
+const TOTAL = 4;
+const STORAGE_KEY = "kitchen_exp_found_drink_v4";
+const PROMPT_KEY = "kitchen_exp_prompt_dismissed_drink_v4";
+
+const stage = document.getElementById("stage");
+const counterEl = document.getElementById("counter");
+
+const fridgeEl = document.getElementById("fridge");
+const shelvesEl = document.getElementById("shelves");
+const upperRightCabEl = document.getElementById("upper-right-cab");
+
+const overlayFridge = document.getElementById("overlayFridge");
+const overlayShelves = document.getElementById("overlayShelves");
+const overlayUpperCab = document.getElementById("overlayUpperCab");
+
+const prompt = document.getElementById("prompt");
+const dismissPromptBtn = document.getElementById("dismissPrompt");
+
+const birdEl = document.getElementById("bird");
+
+/* drink HUD parts */
+const drinkIce = document.getElementById("drink-ice");
+const drinkLiquid = document.getElementById("drink-liquid");
+const drinkBubbles = document.getElementById("drink-bubbles");
+
+function loadFoundSet() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set();
+  }
+}
+function saveFoundSet(set) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
+}
+let found = loadFoundSet();
+
+function updateCounter(bump = false) {
+  counterEl.textContent = `${found.size} / ${TOTAL}`;
+  if (bump) {
+    counterEl.classList.add("bump");
+    setTimeout(() => counterEl.classList.remove("bump"), 160);
+  }
+}
+
+function setItemButtonsState(container) {
+  const btns = Array.from(container.querySelectorAll(".item"));
+  btns.forEach(btn => {
+    const key = btn.dataset.item;
+    const isFound = found.has(key);
+    btn.classList.toggle("found", isFound);
+    btn.disabled = isFound;
+  });
+}
+
+function openOverlay(el) {
+  el.classList.add("open");
+  el.setAttribute("aria-hidden", "false");
+  setItemButtonsState(el);
+}
+
+function closeOverlay(el) {
+  el.classList.remove("open");
+  el.setAttribute("aria-hidden", "true");
+}
+
+function wireOverlay(el) {
+  el.addEventListener("click", (e) => {
+    if (e.target === el) closeOverlay(el);
+  });
+  el.querySelectorAll("[data-close]").forEach(btn => {
+    btn.addEventListener("click", () => closeOverlay(el));
+  });
+  el.querySelectorAll(".item").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.item;
+      if (found.has(key)) return;
+      if (found.size >= TOTAL) return;
+
+      found.add(key);
+      saveFoundSet(found);
+      setItemButtonsState(el);
+      updateCounter(true);
+      updateDrinkHUD();
+    });
+  });
+}
+
+wireOverlay(overlayFridge);
+wireOverlay(overlayShelves);
+wireOverlay(overlayUpperCab);
+
+function clickOrEnterSpace(el, fn) {
+  el.addEventListener("click", fn);
+  el.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      fn();
+    }
+  });
+}
+
+clickOrEnterSpace(fridgeEl, () => openOverlay(overlayFridge));
+clickOrEnterSpace(shelvesEl, () => openOverlay(overlayShelves));
+clickOrEnterSpace(upperRightCabEl, () => openOverlay(overlayUpperCab));
+
+/* prompt */
+function loadPromptDismissed() {
+  return localStorage.getItem(PROMPT_KEY) === "1";
+}
+function dismissPrompt() {
+  localStorage.setItem(PROMPT_KEY, "1");
+  prompt.classList.remove("show");
+  prompt.setAttribute("aria-hidden", "true");
+}
+dismissPromptBtn.addEventListener("click", dismissPrompt);
+
+/* drink assembly logic (cup -> ice -> tequila -> soda water) */
+function updateDrinkHUD() {
+  // Cup is the unlock: without cup, show nothing
+  if (!found.has("cup")) {
+    drinkIce.setAttribute("opacity", "0");
+    drinkLiquid.setAttribute("opacity", "0");
+    drinkBubbles.setAttribute("opacity", "0");
+    return;
+  }
+
+  // Ice appears in cup
+  drinkIce.setAttribute("opacity", found.has("ice") ? "1" : "0");
+
+  // Tequila adds initial liquid
+  if (found.has("tequila")) {
+    drinkLiquid.setAttribute("opacity", "0.85");
+    drinkLiquid.setAttribute("d", "M44 88h32l-1 10H45z");
+  } else {
+    drinkLiquid.setAttribute("opacity", "0");
+  }
+
+  // Soda water tops up + bubbles
+  if (found.has("soda")) {
+    // top up
+    drinkLiquid.setAttribute("opacity", "0.85");
+    drinkLiquid.setAttribute("d", "M42 74h36l-1.5 24H43.5z");
+    drinkBubbles.setAttribute("opacity", "0.9");
+  } else {
+    drinkBubbles.setAttribute("opacity", "0");
+  }
+}
+
+/* bird animation */
+function startBirdLoop() {
+  let t = 0;
+  function tick() {
+    t += 1;
+    const period = 420;
+    const p = (t % period) / period;
+
+    const flightStart = 0.10;
+    const flightEnd = 0.35;
+
+    if (p < flightStart || p > flightEnd) {
+      birdEl.setAttribute("opacity", "0");
+      requestAnimationFrame(tick);
+      return;
+    }
+
+    const fp = (p - flightStart) / (flightEnd - flightStart);
+    const x = 710 + fp * (980 - 710);
+    const y = 205 + Math.sin(fp * Math.PI) * -14;
+    const scale = 0.9 + fp * 0.15;
+
+    birdEl.setAttribute("opacity", "0.9");
+    birdEl.setAttribute("transform", `translate(${x} ${y}) scale(${scale})`);
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+/* init */
+updateCounter(false);
+updateDrinkHUD();
+
+window.addEventListener("load", () => {
+  requestAnimationFrame(() => stage.classList.remove("is-loading"));
+  startBirdLoop();
+
+  if (!loadPromptDismissed()) {
+    setTimeout(() => {
+      prompt.classList.add("show");
+      prompt.setAttribute("aria-hidden", "false");
+    }, 650);
+  }
+});

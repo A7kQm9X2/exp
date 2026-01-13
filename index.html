@@ -3,649 +3,655 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Kitchen Drink Quest</title>
+  <title>Pong (Simple)</title>
   <style>
-    :root{
+    :root {
       --bg: #0b0f14;
-      --ink: rgba(255,255,255,0.92);
-      --muted: rgba(255,255,255,0.68);
-      --hud: rgba(255,255,255,0.08);
-      --hud-border: rgba(255,255,255,0.14);
-      --accent: rgba(130,210,255,0.9);
-      --good: rgba(140,255,190,0.85);
-      --shadow: rgba(0,0,0,0.45);
+      --panel: rgba(255,255,255,0.06);
+      --panel2: rgba(255,255,255,0.10);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.70);
+      --line: rgba(255,255,255,0.18);
+      --accent: rgba(255,255,255,0.92);
+      --shadow: 0 12px 36px rgba(0,0,0,0.35);
+      --radius: 16px;
     }
 
     * { box-sizing: border-box; }
     html, body { height: 100%; }
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background: radial-gradient(1200px 700px at 50% 20%, #142033 0%, var(--bg) 62%, #070a0e 100%);
-      color: var(--ink);
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(1200px 700px at 20% 20%, #162033 0%, var(--bg) 50%, #070a0e 100%);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 16px;
       overflow: hidden;
     }
 
-    /* Calm fade in */
-    .app{
-      position: relative;
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      transform: translateY(6px);
-      transition: opacity 900ms ease, transform 900ms ease;
-    }
-    .app.ready{
-      opacity: 1;
-      transform: translateY(0);
+    .app {
+      width: min(980px, 100%);
+      display: grid;
+      gap: 12px;
     }
 
-    /* HUD */
-    .hud{
-      position: absolute;
-      top: 18px;
-      left: 18px;
-      display:flex;
-      align-items:center;
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       gap: 12px;
-      padding: 10px 12px;
-      border-radius: 14px;
-      background: var(--hud);
-      border: 1px solid var(--hud-border);
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--panel), transparent);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
       backdrop-filter: blur(10px);
-      box-shadow: 0 10px 30px var(--shadow);
-      z-index: 10;
+    }
+
+    .title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 200px;
+    }
+    .title .h {
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      font-size: 16px;
+    }
+    .title .sub {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.2;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button, .chip {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 9px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: transform 0.06s ease, background 0.15s ease, border-color 0.15s ease;
       user-select: none;
     }
-    .hud .count{
-      font-size: 14px;
-      letter-spacing: 0.04em;
-      color: var(--muted);
-      display:flex;
-      align-items:baseline;
-      gap:8px;
-      white-space: nowrap;
-    }
-    .hud .count strong{
-      color: var(--ink);
-      font-weight: 650;
-      font-size: 15px;
+
+    button:hover { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.25); }
+    button:active { transform: translateY(1px); }
+    button:focus-visible { outline: 2px solid rgba(255,255,255,0.35); outline-offset: 2px; }
+
+    .chip {
+      cursor: default;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 9px 12px;
+      background: rgba(255,255,255,0.05);
     }
 
-    .hud .mini{
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.12);
-      display:grid;
-      place-items:center;
-      overflow:hidden;
+    .chip b {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.3px;
     }
 
-    .toast{
-      position: absolute;
-      left: 18px;
-      bottom: 18px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: rgba(0,0,0,0.35);
-      border: 1px solid rgba(255,255,255,0.12);
+    .stage {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
       backdrop-filter: blur(10px);
-      color: rgba(255,255,255,0.82);
-      font-size: 13px;
-      line-height: 1.25;
-      max-width: min(460px, calc(100vw - 36px));
-      box-shadow: 0 10px 30px var(--shadow);
-      z-index: 10;
-      opacity: 0;
-      transform: translateY(6px);
-      transition: opacity 250ms ease, transform 250ms ease;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      background: radial-gradient(800px 400px at 50% 40%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 55%),
+                  linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 18px;
       pointer-events: none;
     }
-    .toast.show{
-      opacity: 1;
-      transform: translateY(0);
-    }
-    .toast b{ color: var(--ink); font-weight: 650; }
 
-    /* Scene wrapper */
-    .scene-wrap{
-      position:absolute;
-      inset:0;
-      display:grid;
-      place-items:center;
-      padding: 72px 18px 18px;
-    }
-
-    /* Make SVG responsive & crisp */
-    svg#kitchen{
-      width: min(1100px, 96vw);
-      height: auto;
-      max-height: 88vh;
+    .card {
+      pointer-events: none;
+      width: min(520px, 92%);
+      border: 1px solid var(--line);
       border-radius: 18px;
-      box-shadow: 0 24px 80px rgba(0,0,0,0.55);
-      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-      border: 1px solid rgba(255,255,255,0.10);
-      overflow: hidden;
+      background: rgba(10, 14, 20, 0.55);
+      box-shadow: 0 16px 50px rgba(0,0,0,0.5);
+      padding: 16px 16px 14px;
+      text-align: center;
+      backdrop-filter: blur(12px);
     }
 
-    /* Click affordance */
-    .clickable{
-      cursor: pointer;
-      transition: filter 180ms ease, transform 180ms ease, opacity 180ms ease;
-      transform-origin: center;
+    .card .big {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      margin: 0 0 6px;
     }
-    .clickable:hover{
-      filter: drop-shadow(0 10px 18px rgba(0,0,0,0.35));
-      transform: translateY(-1px);
-    }
-    .clickable.found{
-      cursor: default;
-      opacity: 0.35;
-      filter: saturate(0.6);
-      transform: none;
+    .card .small {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
     }
 
-    /* Subtle ambient motion */
-    @keyframes floaty {
-      0% { transform: translateY(0); }
-      50% { transform: translateY(-3px); }
-      100% { transform: translateY(0); }
-    }
-    .ambient{
-      animation: floaty 6s ease-in-out infinite;
-    }
-    @keyframes fridgeGlow {
-      0%, 100% { opacity: 0.14; }
-      50% { opacity: 0.20; }
-    }
-    .fridge-glow{
-      animation: fridgeGlow 5.5s ease-in-out infinite;
+    .kbd {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: center;
+      margin-top: 10px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 12px;
     }
 
-    /* Mini drink icon parts */
-    .mini svg{
-      width: 36px;
-      height: 36px;
-    }
-    .mini .part{
-      opacity: 0;
-      transform: translateY(2px);
-      transition: opacity 260ms ease, transform 260ms ease;
-    }
-    .mini .part.on{
-      opacity: 1;
-      transform: translateY(0);
+    .key {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 4px 7px;
+      font-variant-numeric: tabular-nums;
+      color: rgba(255,255,255,0.85);
     }
 
-    /* A11y focus */
-    .clickable:focus{
-      outline: none;
+    .footer-hint {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
     }
-    .focus-ring:focus-visible{
-      filter: drop-shadow(0 0 0 rgba(0,0,0,0));
+
+    @media (max-width: 640px) {
+      header { padding: 10px 10px; }
+      .title .h { font-size: 15px; }
+      .title .sub { display: none; }
+      button, .chip { padding: 8px 10px; font-size: 12px; }
     }
-    /* We'll apply focus ring via stroke highlight in SVG by toggling class */
   </style>
 </head>
 <body>
-  <div class="app" id="app">
-    <div class="hud" aria-live="polite">
-      <div class="count">
-        <strong id="progressText">0 / 4</strong>
-        <span id="statusText">make a drink</span>
+  <div class="app">
+    <header>
+      <div class="title">
+        <div class="h">Pong (Simple)</div>
+        <div class="sub">Keyboard or touch • First to 7 wins • Press Space to start/pause</div>
       </div>
 
-      <!-- Mini drink icon -->
-      <div class="mini" title="Drink progress">
-        <svg viewBox="0 0 64 64" aria-hidden="true">
-          <!-- glass outline always visible -->
-          <path d="M22 10h20l-3 44H25L22 10Z" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.55)" stroke-width="2" />
-          <path d="M24 18h16" stroke="rgba(255,255,255,0.35)" stroke-width="2" />
+      <div class="controls">
+        <span class="chip">Score <b id="scoreText">0 : 0</b></span>
+        <button id="btnStart">Start</button>
+        <button id="btnPause">Pause</button>
+        <button id="btnReset">Reset</button>
+      </div>
+    </header>
 
-          <!-- cup found: subtle base highlight -->
-          <path id="miniCup" class="part" d="M26 50h12" stroke="rgba(140,255,190,0.85)" stroke-width="3" stroke-linecap="round"/>
+    <div class="stage">
+      <canvas id="game" width="960" height="540" aria-label="Pong game canvas"></canvas>
 
-          <!-- ice -->
-          <g id="miniIce" class="part">
-            <rect x="26" y="24" width="8" height="8" rx="2" fill="rgba(190,230,255,0.85)" />
-            <rect x="34" y="28" width="8" height="8" rx="2" fill="rgba(190,230,255,0.70)" />
-          </g>
-
-          <!-- tequila liquid -->
-          <path id="miniTequila" class="part" d="M25 46h14l-1 6H26l-1-6Z" fill="rgba(255, 210, 120, 0.80)"/>
-
-          <!-- soda + bubbles -->
-          <g id="miniSoda" class="part">
-            <path d="M26 28h12l-2 18H28l-2-18Z" fill="rgba(140, 220, 255, 0.22)"/>
-            <circle cx="30" cy="30" r="2.2" fill="rgba(180,240,255,0.85)"/>
-            <circle cx="36" cy="34" r="1.8" fill="rgba(180,240,255,0.75)"/>
-            <circle cx="33" cy="38" r="1.5" fill="rgba(180,240,255,0.70)"/>
-          </g>
-        </svg>
+      <div class="overlay" id="overlay" style="display:grid;">
+        <div class="card">
+          <p class="big" id="overlayTitle">Press Space to Start</p>
+          <p class="small" id="overlayBody">
+            You control the left paddle. The right paddle is AI.
+            On touch devices, drag anywhere on the canvas to move your paddle.
+          </p>
+          <div class="kbd" aria-hidden="true">
+            <span class="key">W</span>/<span class="key">S</span>
+            <span style="opacity:.5">or</span>
+            <span class="key">↑</span>/<span class="key">↓</span>
+            <span style="opacity:.5">•</span>
+            <span class="key">Space</span> Start/Pause
+            <span style="opacity:.5">•</span>
+            <span class="key">R</span> Reset
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="toast" id="toast"></div>
-
-    <div class="scene-wrap">
-      <!-- Face-on kitchen scene (simple but extendable).
-           Replace shapes with your own SVG later; keep IDs & groups. -->
-     <!-- Replace your existing <svg id="kitchen" ...>...</svg> with THIS block.
-     It matches the reference style (clean strokes + soft blue fills) and includes
-     clickable groups with the required IDs: cup, ice, tequilaCabinet, soda.
--->
-<svg id="kitchen" viewBox="0 0 1200 720" role="img" aria-label="Interactive kitchen scene">
-  <defs>
-    <!-- Palette tuned to the reference image -->
-    <style>
-      .k-stroke { stroke: rgba(18,32,44,0.92); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
-      .k-stroke2{ stroke: rgba(18,32,44,0.92); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
-      .k-fill-white { fill: rgba(255,255,255,0.92); }
-      .k-fill-soft  { fill: rgba(190,220,238,0.55); }
-      .k-fill-softer{ fill: rgba(190,220,238,0.28); }
-      .k-fill-floor { fill: rgba(190,220,238,0.25); }
-      .k-dot { fill: rgba(18,32,44,0.92); }
-      .k-none{ fill: none; }
-
-      /* Hover state: subtle glow + lift (works with your existing .clickable:hover too) */
-      .clickable:hover .hover-glow { opacity: 1; }
-      .hover-glow { opacity: 0; transition: opacity 180ms ease; }
-    </style>
-
-    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="rgba(0,0,0,0.22)"/>
-      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="rgba(130,210,255,0.25)"/>
-    </filter>
-  </defs>
-
-  <!-- Background / wall wash -->
-  <rect x="0" y="0" width="1200" height="720" fill="rgba(255,255,255,0.06)"/>
-
-  <!-- Floor / lower wash band -->
-  <rect x="0" y="520" width="1200" height="200" class="k-fill-floor"/>
-
-  <!-- ===== LEFT FRIDGE ===== -->
-  <g id="fridgeUnit">
-    <!-- Body -->
-    <rect x="120" y="190" width="160" height="360" rx="28" class="k-fill-white k-stroke"/>
-    <!-- Divider between doors -->
-    <line x1="120" y1="360" x2="280" y2="360" class="k-stroke2"/>
-
-    <!-- Handles -->
-    <rect x="252" y="235" width="14" height="90" rx="7" class="k-dot"/>
-    <rect x="252" y="395" width="14" height="120" rx="7" class="k-dot"/>
-
-    <!-- Subtle interior hint (optional) -->
-    <rect x="128" y="198" width="144" height="344" rx="22" class="k-fill-softer" opacity="0.35"/>
-  </g>
-
-  <!-- ===== COUNTER + BACKSPLASH STRIP ===== -->
-  <g id="counterRun">
-    <!-- Backsplash strip -->
-    <rect x="270" y="340" width="740" height="90" rx="0" class="k-fill-soft" opacity="0.55"/>
-    <!-- Counter line -->
-    <line x1="270" y1="430" x2="1010" y2="430" class="k-stroke"/>
-  </g>
-
-  <!-- ===== UPPER CABINETS (2 sets) ===== -->
-  <g id="upperCabinets">
-    <!-- Left upper cabinet (2 doors) -->
-    <rect x="300" y="150" width="250" height="120" rx="18" class="k-fill-white k-stroke"/>
-    <line x1="425" y1="150" x2="425" y2="270" class="k-stroke2"/>
-    <circle cx="400" cy="210" r="8" class="k-dot"/>
-    <circle cx="450" cy="210" r="8" class="k-dot"/>
-
-    <!-- Middle upper cabinet (2 doors) -->
-    <rect x="575" y="150" width="250" height="120" rx="18" class="k-fill-white k-stroke"/>
-    <line x1="700" y1="150" x2="700" y2="270" class="k-stroke2"/>
-    <circle cx="675" cy="210" r="8" class="k-dot"/>
-    <circle cx="725" cy="210" r="8" class="k-dot"/>
-
-    <!-- Window (2x2 panes) -->
-    <rect x="900" y="150" width="300" height="150" rx="18" class="k-fill-soft k-stroke"/>
-    <line x1="1050" y1="150" x2="1050" y2="300" class="k-stroke2"/>
-    <line x1="900" y1="225" x2="1200" y2="225" class="k-stroke2"/>
-  </g>
-
-  <!-- ===== RIGHT TALL CABINET / PANTRY ===== -->
-  <g id="rightPantry">
-    <rect x="1040" y="140" width="170" height="420" rx="22" class="k-fill-white k-stroke"/>
-    <!-- Shelf dividers -->
-    <line x1="1040" y1="240" x2="1210" y2="240" class="k-stroke2"/>
-    <line x1="1040" y1="340" x2="1210" y2="340" class="k-stroke2"/>
-    <line x1="1040" y1="440" x2="1210" y2="440" class="k-stroke2"/>
-  </g>
-
-  <!-- ===== OVEN / RANGE ===== -->
-  <g id="oven">
-    <!-- Outer -->
-    <rect x="300" y="370" width="230" height="160" rx="18" class="k-fill-white k-stroke"/>
-    <!-- Cooktop panel -->
-    <rect x="315" y="382" width="200" height="42" rx="14" class="k-fill-soft k-stroke2"/>
-    <!-- Knobs -->
-    <circle cx="350" cy="403" r="10" class="k-dot"/>
-    <circle cx="415" cy="403" r="10" class="k-dot"/>
-    <circle cx="480" cy="403" r="10" class="k-dot"/>
-    <!-- Oven window -->
-    <rect x="335" y="435" width="160" height="75" rx="12" class="k-fill-soft k-stroke2"/>
-  </g>
-
-  <!-- ===== LOWER CABINETS (3 segments) ===== -->
-  <g id="lowerCabinets">
-    <!-- Segment 1 (2 doors) -->
-    <rect x="540" y="430" width="220" height="110" rx="18" class="k-fill-white k-stroke"/>
-    <line x1="650" y1="430" x2="650" y2="540" class="k-stroke2"/>
-    <circle cx="620" cy="485" r="8" class="k-dot"/>
-    <circle cx="680" cy="485" r="8" class="k-dot"/>
-
-    <!-- Segment 2 (2 doors) -->
-    <rect x="770" y="430" width="220" height="110" rx="18" class="k-fill-white k-stroke"/>
-    <line x1="880" y1="430" x2="880" y2="540" class="k-stroke2"/>
-    <circle cx="850" cy="485" r="8" class="k-dot"/>
-    <circle cx="910" cy="485" r="8" class="k-dot"/>
-  </g>
-
-  <!-- ===== SINK ===== -->
-  <g id="sink">
-    <!-- Basin -->
-    <rect x="835" y="360" width="310" height="95" rx="18" class="k-fill-white k-stroke"/>
-    <rect x="870" y="382" width="240" height="55" rx="14" class="k-fill-soft k-stroke2"/>
-    <!-- Faucet -->
-    <path d="M1010 360
-             c 0 -30 35 -35 55 -20
-             c 18 12 18 38 -6 44
-             " class="k-none k-stroke"/>
-    <circle cx="1012" cy="360" r="6" class="k-dot"/>
-  </g>
-
-  <!-- =========================================================
-       CLICKABLE TARGETS (wired for your JS)
-       Required IDs: cup, ice, tequilaCabinet, soda
-       Keep these groups intact when editing!
-       ========================================================= -->
-
-  <!-- 1) CUP (on shelves / left of upper cabinets area).
-       We place it on the counter area near left side for visibility,
-       but still reads as "on shelves" in this simplified scene. -->
-  <g id="cup" class="clickable" tabindex="0" role="button" aria-label="Pick up cup">
-    <!-- glow on hover -->
-    <g class="hover-glow" filter="url(#softGlow)">
-      <path d="M0 0h1" opacity="0.001"/>
-    </g>
-
-    <!-- Cup drawing -->
-    <g transform="translate(460 310)">
-      <path d="M10 20 h90 l-12 130 h-66 l-12-130 Z" class="k-fill-white k-stroke"/>
-      <path d="M24 50 h62" class="k-none k-stroke2" opacity="0.45"/>
-      <!-- small shelf hint line behind cup -->
-      <line x1="-70" y1="170" x2="170" y2="170" class="k-stroke2" opacity="0.22"/>
-    </g>
-  </g>
-
-  <!-- 2) ICE (in left fridge). We make a visible ice bin in the lower door. -->
-  <g id="ice" class="clickable" tabindex="0" role="button" aria-label="Grab ice from fridge">
-    <g class="hover-glow" filter="url(#softGlow)">
-      <rect x="128" y="386" width="144" height="154" rx="22" fill="rgba(130,210,255,0.10)"/>
-    </g>
-
-    <!-- Ice bin -->
-    <g>
-      <rect x="145" y="410" width="110" height="90" rx="18" class="k-fill-soft k-stroke2" opacity="0.75"/>
-      <rect x="162" y="430" width="32" height="30" rx="8" fill="rgba(255,255,255,0.45)"/>
-      <rect x="197" y="445" width="34" height="30" rx="8" fill="rgba(255,255,255,0.35)"/>
-      <rect x="170" y="465" width="30" height="26" rx="8" fill="rgba(255,255,255,0.28)"/>
-    </g>
-  </g>
-
-  <!-- 3) TEQUILA (upper-right cabinet). Clicking the right-most upper cabinet door area. -->
-  <g id="tequilaCabinet" class="clickable" tabindex="0" role="button" aria-label="Open cabinet for tequila">
-    <g class="hover-glow" filter="url(#softGlow)">
-      <rect x="575" y="150" width="250" height="120" rx="18" fill="rgba(130,210,255,0.10)"/>
-    </g>
-
-    <!-- Bottle silhouette subtly inside the middle upper cabinet (right side) -->
-    <g transform="translate(725 168)">
-      <path d="M40 10
-               c 0 -6 20 -6 20 0
-               v 14
-               c 0 4 6 6 6 12
-               v 46
-               c 0 10 -38 10 -38 0
-               v -46
-               c 0 -6 6 -8 6 -12
-               Z"
-            fill="rgba(255,210,120,0.40)" stroke="rgba(18,32,44,0.55)" stroke-width="4" stroke-linejoin="round"/>
-      <rect x="40" y="22" width="20" height="10" rx="4" fill="rgba(255,255,255,0.25)"/>
-    </g>
-  </g>
-
-  <!-- 4) SODA (in left fridge). A tall bottle in upper door area. -->
-  <g id="soda" class="clickable" tabindex="0" role="button" aria-label="Grab soda water from fridge">
-    <g class="hover-glow" filter="url(#softGlow)">
-      <rect x="128" y="198" width="144" height="156" rx="22" fill="rgba(130,210,255,0.10)"/>
-    </g>
-
-    <g>
-      <path d="M205 230
-               c 0 -10 35 -10 35 0
-               v 18
-               c 0 6 10 8 10 18
-               v 80
-               c 0 18 -65 18 -65 0
-               v -80
-               c 0 -10 10 -12 10 -18
-               v -18 Z"
-            class="k-fill-soft k-stroke2" opacity="0.75"/>
-      <rect x="202" y="260" width="40" height="18" rx="9" fill="rgba(255,255,255,0.30)"/>
-      <circle cx="215" cy="322" r="5" fill="rgba(255,255,255,0.55)"/>
-      <circle cx="230" cy="345" r="4" fill="rgba(255,255,255,0.45)"/>
-      <circle cx="220" cy="370" r="3.5" fill="rgba(255,255,255,0.40)"/>
-    </g>
-  </g>
-</svg>
-
+    <div class="footer-hint" id="hint">
+      Tip: If you lose the ball, it serves toward the player who was scored on.
     </div>
   </div>
 
   <script>
     (() => {
-      "use strict";
+      // ---------- Canvas + scaling ----------
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d", { alpha: true });
 
-      // === Config ===
-      const STORAGE_KEY = "kitchen_drink_progress_v1";
-      const TOTAL = 4;
+      const scoreText = document.getElementById("scoreText");
+      const overlay = document.getElementById("overlay");
+      const overlayTitle = document.getElementById("overlayTitle");
+      const overlayBody = document.getElementById("overlayBody");
 
-      // Item mapping (must match your spec)
-      const ITEMS = [
-        { id: "cup",  label: "Cup",       step: 1, hint: "Found the cup." },
-        { id: "ice",  label: "Ice",       step: 2, hint: "Ice! Nice." },
-        { id: "tequilaCabinet", label: "Tequila", step: 3, hint: "Tequila secured." },
-        { id: "soda", label: "Soda water", step: 4, hint: "Soda water topped it up." }
-      ];
+      const btnStart = document.getElementById("btnStart");
+      const btnPause = document.getElementById("btnPause");
+      const btnReset = document.getElementById("btnReset");
 
-      // Mini icon parts (sequence)
-      const MINI_PARTS = {
-        1: ["miniCup"],
-        2: ["miniCup", "miniIce"],
-        3: ["miniCup", "miniIce", "miniTequila"],
-        4: ["miniCup", "miniIce", "miniTequila", "miniSoda"]
+      // Use logical units, then draw in those units.
+      const W = canvas.width;
+      const H = canvas.height;
+
+      // ---------- Game state ----------
+      const settings = {
+        paddleW: 14,
+        paddleH: 110,
+        paddleInset: 26,
+        paddleSpeed: 520,   // px/s
+        aiMaxSpeed: 470,    // px/s
+        aiLookahead: 0.18,  // seconds to "predict"
+        ballRadius: 9,
+        ballSpeed: 520,     // px/s baseline
+        ballSpeedInc: 1.035, // multiplier on paddle hit
+        maxBallSpeed: 980,
+        scoreToWin: 7,
       };
 
-      // === State ===
       const state = {
-        found: new Set(), // ids
+        running: false,
+        paused: false,
+        gameOver: false,
+        lastTime: 0,
+        leftScore: 0,
+        rightScore: 0,
+        serveDir: 1, // 1 => to right, -1 => to left
+        keys: new Set(),
+        pointerActive: false,
       };
 
-      // === Elements ===
-      const app = document.getElementById("app");
-      const progressText = document.getElementById("progressText");
-      const statusText = document.getElementById("statusText");
-      const toast = document.getElementById("toast");
+      const left = {
+        x: settings.paddleInset,
+        y: (H - settings.paddleH) / 2,
+        vy: 0
+      };
 
-      // Mini parts
-      const miniCup = document.getElementById("miniCup");
-      const miniIce = document.getElementById("miniIce");
-      const miniTequila = document.getElementById("miniTequila");
-      const miniSoda = document.getElementById("miniSoda");
-      const miniPartsEls = { miniCup, miniIce, miniTequila, miniSoda };
+      const right = {
+        x: W - settings.paddleInset - settings.paddleW,
+        y: (H - settings.paddleH) / 2,
+        vy: 0
+      };
 
-      // === Helpers ===
-      function safeParse(json) {
-        try { return JSON.parse(json); } catch { return null; }
+      const ball = {
+        x: W / 2,
+        y: H / 2,
+        vx: 0,
+        vy: 0,
+        speed: settings.ballSpeed
+      };
+
+      function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+
+      function resetBall(servingDir) {
+        // ServingDir is direction ball will travel on serve (1 => right, -1 => left)
+        ball.x = W / 2;
+        ball.y = H / 2;
+
+        ball.speed = settings.ballSpeed;
+
+        // Random angle within a safe range (avoid too vertical)
+        const angle = (Math.random() * 0.9 - 0.45) * Math.PI; // ~[-81°, +81°] scaled down
+        const base = ball.speed;
+
+        const dx = Math.cos(angle) * base * servingDir;
+        const dy = Math.sin(angle) * base;
+
+        ball.vx = dx;
+        ball.vy = dy;
+
+        state.serveDir = servingDir;
       }
 
-      function loadProgress() {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        const parsed = raw ? safeParse(raw) : null;
-        if (!parsed || !Array.isArray(parsed.found)) return;
+      function resetGame() {
+        state.leftScore = 0;
+        state.rightScore = 0;
+        state.gameOver = false;
+        state.running = false;
+        state.paused = false;
 
-        parsed.found.forEach(id => state.found.add(id));
+        left.y = (H - settings.paddleH) / 2;
+        right.y = (H - settings.paddleH) / 2;
+
+        // Serve toward the last loser (start: serve to right)
+        resetBall(1);
+
+        updateScoreUI();
+        showOverlay("Press Space to Start", "You control the left paddle. The right paddle is AI.\nTouch: drag on the canvas.");
+        draw(); // render a clean static frame
       }
 
-      function saveProgress() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          found: Array.from(state.found),
-          savedAt: Date.now()
-        }));
+      function updateScoreUI() {
+        scoreText.textContent = `${state.leftScore} : ${state.rightScore}`;
       }
 
-      function showToast(html, ms = 1400) {
-        toast.innerHTML = html;
-        toast.classList.add("show");
-        window.clearTimeout(showToast._t);
-        showToast._t = window.setTimeout(() => toast.classList.remove("show"), ms);
+      function showOverlay(title, body) {
+        overlayTitle.textContent = title;
+        overlayBody.textContent = body;
+        overlay.style.display = "grid";
       }
 
-      function foundCount() {
-        // Ensure we count in mapping order
-        return ITEMS.reduce((acc, item) => acc + (state.found.has(item.id) ? 1 : 0), 0);
+      function hideOverlay() {
+        overlay.style.display = "none";
       }
 
-      function updateHUD() {
-        const count = foundCount();
-        progressText.textContent = `${count} / ${TOTAL}`;
-        if (count < TOTAL) {
-          statusText.textContent = "make a drink";
-        } else {
-          statusText.textContent = "cheers ✨";
+      function start() {
+        if (state.gameOver) {
+          resetGame();
         }
-
-        // Mini icon
-        // Clear all
-        Object.values(miniPartsEls).forEach(el => el.classList.remove("on"));
-        const partsToShow = MINI_PARTS[Math.min(count, TOTAL)] || [];
-        partsToShow.forEach(id => miniPartsEls[id]?.classList.add("on"));
-      }
-
-      function markFound(id) {
-        if (state.found.has(id)) return false;
-        state.found.add(id);
-        saveProgress();
-        return true;
-      }
-
-      function setClickableFoundVisuals() {
-        // Add .found class to scene elements already collected
-        ITEMS.forEach(item => {
-          const el = document.getElementById(item.id);
-          if (!el) return;
-          if (state.found.has(item.id)) {
-            el.classList.add("found");
-            el.setAttribute("aria-disabled", "true");
-          }
-        });
-      }
-
-      function wireInteractions() {
-        // Attach click + keyboard activation (Enter/Space)
-        ITEMS.forEach(item => {
-          const el = document.getElementById(item.id);
-          if (!el) return;
-
-          const activate = () => {
-            if (state.found.has(item.id)) {
-              showToast(`You already grabbed <b>${item.label}</b>.`, 900);
-              return;
-            }
-
-            const changed = markFound(item.id);
-            if (changed) {
-              el.classList.add("found");
-              el.setAttribute("aria-disabled", "true");
-              updateHUD();
-
-              // Slightly “reward” with a toast
-              const count = foundCount();
-              const remaining = TOTAL - count;
-              const tail = remaining > 0
-                ? ` <span style="opacity:.75">(${remaining} to go)</span>`
-                : ` <span style="color:rgba(140,255,190,.9)">done</span>`;
-
-              showToast(`<b>${item.label}</b> found.${tail}`, 1400);
-
-              if (count === TOTAL) {
-                // extra completion toast
-                window.setTimeout(() => {
-                  showToast(`Drink complete. <b>Cheers.</b>`, 1600);
-                }, 500);
-              }
-            }
-          };
-
-          el.addEventListener("click", activate);
-
-          el.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              activate();
-            }
-          });
-        });
-
-        // Optional: reset with a key chord (local dev convenience)
-        // Ctrl/Cmd + Shift + R
-        window.addEventListener("keydown", (e) => {
-          const isMac = navigator.platform.toLowerCase().includes("mac");
-          const metaOrCtrl = isMac ? e.metaKey : e.ctrlKey;
-          if (metaOrCtrl && e.shiftKey && e.key.toLowerCase() === "r") {
-            e.preventDefault();
-            localStorage.removeItem(STORAGE_KEY);
-            state.found.clear();
-            // remove found visuals
-            ITEMS.forEach(item => {
-              const el = document.getElementById(item.id);
-              if (!el) return;
-              el.classList.remove("found");
-              el.removeAttribute("aria-disabled");
-            });
-            updateHUD();
-            showToast(`Progress reset.`, 1200);
-          }
-        });
-      }
-
-      function init() {
-        loadProgress();
-        setClickableFoundVisuals();
-        updateHUD();
-        wireInteractions();
-
-        // Calm fade-in after first paint
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => app.classList.add("ready"));
-        });
-
-        // Tiny onboarding toast if empty
-        if (foundCount() === 0) {
-          window.setTimeout(() => {
-            showToast(`Find ingredients to <b>make a drink</b>.`, 1500);
-          }, 700);
+        if (!state.running) {
+          state.running = true;
+          state.paused = false;
+          hideOverlay();
+          state.lastTime = performance.now();
+          requestAnimationFrame(loop);
+        } else if (state.paused) {
+          state.paused = false;
+          hideOverlay();
+          state.lastTime = performance.now();
+          requestAnimationFrame(loop);
         }
       }
 
-      init();
+      function pause() {
+        if (!state.running || state.gameOver) return;
+        state.paused = true;
+        showOverlay("Paused", "Press Space to resume.");
+      }
+
+      function togglePause() {
+        if (!state.running) return start();
+        if (state.gameOver) return;
+        state.paused ? start() : pause();
+      }
+
+      // ---------- Input ----------
+      function setLeftVelocityFromKeys() {
+        const up = state.keys.has("w") || state.keys.has("arrowup");
+        const down = state.keys.has("s") || state.keys.has("arrowdown");
+        if (up && !down) left.vy = -settings.paddleSpeed;
+        else if (down && !up) left.vy = settings.paddleSpeed;
+        else left.vy = 0;
+      }
+
+      window.addEventListener("keydown", (e) => {
+        const k = e.key.toLowerCase();
+
+        if (k === " " || k === "spacebar") {
+          e.preventDefault();
+          togglePause();
+          return;
+        }
+        if (k === "r") {
+          e.preventDefault();
+          resetGame();
+          return;
+        }
+        if (["arrowup","arrowdown"].includes(k)) e.preventDefault();
+
+        state.keys.add(k);
+        setLeftVelocityFromKeys();
+      });
+
+      window.addEventListener("keyup", (e) => {
+        const k = e.key.toLowerCase();
+        state.keys.delete(k);
+        setLeftVelocityFromKeys();
+      });
+
+      // Touch / pointer: drag anywhere on canvas to move left paddle
+      function canvasToGameY(clientY) {
+        const rect = canvas.getBoundingClientRect();
+        const t = (clientY - rect.top) / rect.height;
+        return clamp(t * H, 0, H);
+      }
+
+      function onPointerMove(e) {
+        if (!state.pointerActive) return;
+        const y = canvasToGameY(e.clientY);
+        left.y = clamp(y - settings.paddleH / 2, 0, H - settings.paddleH);
+        left.vy = 0;
+      }
+
+      canvas.addEventListener("pointerdown", (e) => {
+        canvas.setPointerCapture?.(e.pointerId);
+        state.pointerActive = true;
+        onPointerMove(e);
+      });
+
+      canvas.addEventListener("pointermove", onPointerMove);
+
+      function endPointer(e) {
+        state.pointerActive = false;
+      }
+      canvas.addEventListener("pointerup", endPointer);
+      canvas.addEventListener("pointercancel", endPointer);
+      canvas.addEventListener("pointerleave", endPointer);
+
+      // Buttons
+      btnStart.addEventListener("click", start);
+      btnPause.addEventListener("click", togglePause);
+      btnReset.addEventListener("click", resetGame);
+
+      // ---------- Physics helpers ----------
+      function circleRectCollision(cx, cy, r, rx, ry, rw, rh) {
+        const closestX = clamp(cx, rx, rx + rw);
+        const closestY = clamp(cy, ry, ry + rh);
+        const dx = cx - closestX;
+        const dy = cy - closestY;
+        return (dx * dx + dy * dy) <= (r * r);
+      }
+
+      function reflectBallOffPaddle(paddle) {
+        // Move ball out of paddle to avoid sticking
+        if (paddle === left) ball.x = left.x + settings.paddleW + settings.ballRadius + 0.5;
+        else ball.x = right.x - settings.ballRadius - 0.5;
+
+        // Where on paddle did it hit? (-1 top .. +1 bottom)
+        const paddleCenter = paddle.y + settings.paddleH / 2;
+        const rel = clamp((ball.y - paddleCenter) / (settings.paddleH / 2), -1, 1);
+
+        // Convert rel into a reflection angle (max ~50 deg)
+        const maxAngle = 50 * Math.PI / 180;
+        const angle = rel * maxAngle;
+
+        // Ensure ball goes toward the other side
+        const dir = (paddle === left) ? 1 : -1;
+
+        // Increase speed slightly on each hit (cap it)
+        ball.speed = Math.min(settings.maxBallSpeed, ball.speed * settings.ballSpeedInc);
+
+        // New velocity based on angle and speed
+        const vx = Math.cos(angle) * ball.speed * dir;
+        const vy = Math.sin(angle) * ball.speed;
+
+        ball.vx = vx;
+        // Add some of paddle velocity influence (a little "spin")
+        ball.vy = vy + paddle.vy * 0.15;
+      }
+
+      // ---------- Update ----------
+      function update(dt) {
+        // Left paddle (keyboard)
+        setLeftVelocityFromKeys();
+        left.y = clamp(left.y + left.vy * dt, 0, H - settings.paddleH);
+
+        // Right paddle (simple AI)
+        const targetY = (() => {
+          // Predict ball's y a short time ahead, only if ball is moving toward AI
+          if (ball.vx > 0) return ball.y + ball.vy * settings.aiLookahead;
+          // If ball moving away, drift toward center
+          return H / 2;
+        })();
+
+        const rightCenter = right.y + settings.paddleH / 2;
+        const diff = targetY - rightCenter;
+        const desiredVy = clamp(diff * 7.0, -settings.aiMaxSpeed, settings.aiMaxSpeed); // proportional controller
+        right.vy = desiredVy;
+        right.y = clamp(right.y + right.vy * dt, 0, H - settings.paddleH);
+
+        // Ball movement
+        ball.x += ball.vx * dt;
+        ball.y += ball.vy * dt;
+
+        // Top/bottom wall bounce
+        if (ball.y - settings.ballRadius <= 0) {
+          ball.y = settings.ballRadius;
+          ball.vy *= -1;
+        } else if (ball.y + settings.ballRadius >= H) {
+          ball.y = H - settings.ballRadius;
+          ball.vy *= -1;
+        }
+
+        // Paddle collisions
+        const leftHit = circleRectCollision(
+          ball.x, ball.y, settings.ballRadius,
+          left.x, left.y, settings.paddleW, settings.paddleH
+        );
+        if (leftHit && ball.vx < 0) reflectBallOffPaddle(left);
+
+        const rightHit = circleRectCollision(
+          ball.x, ball.y, settings.ballRadius,
+          right.x, right.y, settings.paddleW, settings.paddleH
+        );
+        if (rightHit && ball.vx > 0) reflectBallOffPaddle(right);
+
+        // Score checks
+        if (ball.x + settings.ballRadius < 0) {
+          // Right scores
+          state.rightScore += 1;
+          updateScoreUI();
+          if (state.rightScore >= settings.scoreToWin) {
+            endGame(false);
+          } else {
+            // Serve toward left (loser was left)
+            resetBall(-1);
+          }
+        } else if (ball.x - settings.ballRadius > W) {
+          // Left scores
+          state.leftScore += 1;
+          updateScoreUI();
+          if (state.leftScore >= settings.scoreToWin) {
+            endGame(true);
+          } else {
+            // Serve toward right (loser was right)
+            resetBall(1);
+          }
+        }
+      }
+
+      function endGame(leftWon) {
+        state.gameOver = true;
+        state.running = false;
+        state.paused = false;
+        showOverlay(
+          leftWon ? "You win! 🎉" : "AI wins!",
+          "Press R to reset, or Space to start a new match."
+        );
+      }
+
+      // ---------- Draw ----------
+      function drawNet() {
+        const dashH = 18;
+        const gap = 14;
+        const x = W / 2;
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = "rgba(255,255,255,0.35)";
+        for (let y = 18; y < H - 18; y += dashH + gap) {
+          ctx.fillRect(x - 2, y, 4, dashH);
+        }
+        ctx.restore();
+      }
+
+      function drawPaddle(p) {
+        ctx.save();
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        ctx.fillRect(p.x, p.y, settings.paddleW, settings.paddleH);
+        ctx.restore();
+      }
+
+      function drawBall() {
+        ctx.save();
+        ctx.fillStyle = "rgba(255,255,255,0.95)";
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, settings.ballRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawScoreOnCanvas() {
+        ctx.save();
+        ctx.globalAlpha = 0.42;
+        ctx.fillStyle = "rgba(255,255,255,0.95)";
+        ctx.font = "900 72px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        const padTop = 18;
+        ctx.fillText(String(state.leftScore), W * 0.42, padTop);
+        ctx.fillText(String(state.rightScore), W * 0.58, padTop);
+        ctx.restore();
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+
+        // subtle vignette
+        ctx.save();
+        ctx.fillStyle = "rgba(0,0,0,0.12)";
+        ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+
+        drawNet();
+        drawPaddle(left);
+        drawPaddle(right);
+        drawBall();
+        drawScoreOnCanvas();
+      }
+
+      // ---------- Loop ----------
+      function loop(t) {
+        if (!state.running || state.paused || state.gameOver) {
+          draw();
+          return;
+        }
+
+        const dt = Math.min(0.033, (t - state.lastTime) / 1000); // cap dt for stability
+        state.lastTime = t;
+
+        update(dt);
+        draw();
+
+        requestAnimationFrame(loop);
+      }
+
+      // ---------- Initialize ----------
+      resetGame();
+
+      // Space to start works even if canvas isn't focused (handled on window keydown).
+      // Make sure overlay text stays correct on load.
+      showOverlay("Press Space to Start", "You control the left paddle. The right paddle is AI.\nTouch: drag on the canvas.");
     })();
   </script>
 </body>

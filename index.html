@@ -232,99 +232,220 @@
     <div class="scene-wrap">
       <!-- Face-on kitchen scene (simple but extendable).
            Replace shapes with your own SVG later; keep IDs & groups. -->
-      <svg id="kitchen" viewBox="0 0 1200 720" role="img" aria-label="Interactive kitchen scene">
-        <defs>
-          <linearGradient id="wall" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stop-color="rgba(255,255,255,0.10)"/>
-            <stop offset="1" stop-color="rgba(255,255,255,0.02)"/>
-          </linearGradient>
-          <linearGradient id="counter" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stop-color="rgba(255,255,255,0.08)"/>
-            <stop offset="1" stop-color="rgba(0,0,0,0.12)"/>
-          </linearGradient>
-          <linearGradient id="wood" x1="0" x2="1">
-            <stop offset="0" stop-color="rgba(255,210,160,0.18)"/>
-            <stop offset="1" stop-color="rgba(255,210,160,0.08)"/>
-          </linearGradient>
-          <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="rgba(0,0,0,0.35)" />
-          </filter>
-        </defs>
+     <!-- Replace your existing <svg id="kitchen" ...>...</svg> with THIS block.
+     It matches the reference style (clean strokes + soft blue fills) and includes
+     clickable groups with the required IDs: cup, ice, tequilaCabinet, soda.
+-->
+<svg id="kitchen" viewBox="0 0 1200 720" role="img" aria-label="Interactive kitchen scene">
+  <defs>
+    <!-- Palette tuned to the reference image -->
+    <style>
+      .k-stroke { stroke: rgba(18,32,44,0.92); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+      .k-stroke2{ stroke: rgba(18,32,44,0.92); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+      .k-fill-white { fill: rgba(255,255,255,0.92); }
+      .k-fill-soft  { fill: rgba(190,220,238,0.55); }
+      .k-fill-softer{ fill: rgba(190,220,238,0.28); }
+      .k-fill-floor { fill: rgba(190,220,238,0.25); }
+      .k-dot { fill: rgba(18,32,44,0.92); }
+      .k-none{ fill: none; }
 
-        <!-- Background wall -->
-        <rect x="0" y="0" width="1200" height="720" fill="url(#wall)"/>
+      /* Hover state: subtle glow + lift (works with your existing .clickable:hover too) */
+      .clickable:hover .hover-glow { opacity: 1; }
+      .hover-glow { opacity: 0; transition: opacity 180ms ease; }
+    </style>
 
-        <!-- Upper cabinets -->
-        <g id="cabinets" filter="url(#softShadow)">
-          <rect x="90" y="70" width="420" height="170" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.10)" />
-          <rect x="540" y="70" width="570" height="170" rx="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.10)" />
-          <line x1="300" y1="70" x2="300" y2="240" stroke="rgba(255,255,255,0.10)" />
-          <line x1="750" y1="70" x2="750" y2="240" stroke="rgba(255,255,255,0.10)" />
-          <line x1="930" y1="70" x2="930" y2="240" stroke="rgba(255,255,255,0.10)" />
-        </g>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="rgba(0,0,0,0.22)"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="rgba(130,210,255,0.25)"/>
+    </filter>
+  </defs>
 
-        <!-- Upper-right cabinet clickable area for tequila -->
-        <g id="tequilaCabinet" class="clickable ambient" tabindex="0" role="button" aria-label="Open upper-right cabinet">
-          <!-- target door region (upper-right) -->
-          <rect x="930" y="70" width="180" height="170" rx="18" fill="rgba(130,210,255,0.08)" stroke="rgba(130,210,255,0.20)"/>
-          <circle cx="1075" cy="155" r="6" fill="rgba(255,255,255,0.30)"/>
-          <text x="1018" y="165" font-size="12" fill="rgba(255,255,255,0.35)">cabinet</text>
-        </g>
+  <!-- Background / wall wash -->
+  <rect x="0" y="0" width="1200" height="720" fill="rgba(255,255,255,0.06)"/>
 
-        <!-- Shelves on left -->
-        <g id="shelves" filter="url(#softShadow)">
-          <rect x="90" y="270" width="420" height="160" rx="18" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.10)" />
-          <line x1="110" y1="322" x2="490" y2="322" stroke="rgba(255,255,255,0.10)" />
-          <line x1="110" y1="374" x2="490" y2="374" stroke="rgba(255,255,255,0.10)" />
-        </g>
+  <!-- Floor / lower wash band -->
+  <rect x="0" y="520" width="1200" height="200" class="k-fill-floor"/>
 
-        <!-- Cup clickable (on shelves) -->
-        <g id="cup" class="clickable ambient" tabindex="0" role="button" aria-label="Pick up cup">
-          <!-- A simple cup silhouette sitting on shelf -->
-          <path d="M235 340h60l-8 70h-44l-8-70Z" fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.30)" />
-          <path d="M247 355h36" stroke="rgba(255,255,255,0.25)" />
-          <text x="245" y="332" font-size="12" fill="rgba(255,255,255,0.35)">cup</text>
-        </g>
+  <!-- ===== LEFT FRIDGE ===== -->
+  <g id="fridgeUnit">
+    <!-- Body -->
+    <rect x="120" y="190" width="160" height="360" rx="28" class="k-fill-white k-stroke"/>
+    <!-- Divider between doors -->
+    <line x1="120" y1="360" x2="280" y2="360" class="k-stroke2"/>
 
-        <!-- Counter -->
-        <g id="countertop" filter="url(#softShadow)">
-          <rect x="90" y="470" width="1020" height="150" rx="22" fill="url(#counter)" stroke="rgba(255,255,255,0.10)" />
-          <rect x="90" y="470" width="1020" height="42" rx="22" fill="rgba(255,255,255,0.05)"/>
-        </g>
+    <!-- Handles -->
+    <rect x="252" y="235" width="14" height="90" rx="7" class="k-dot"/>
+    <rect x="252" y="395" width="14" height="120" rx="7" class="k-dot"/>
 
-        <!-- Fridge on right -->
-        <g id="fridge" filter="url(#softShadow)">
-          <rect x="820" y="270" width="290" height="350" rx="22" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)" />
-          <line x1="820" y1="410" x2="1110" y2="410" stroke="rgba(255,255,255,0.10)" />
-          <!-- glow layer -->
-          <rect class="fridge-glow" x="832" y="282" width="266" height="326" rx="18" fill="rgba(130,210,255,0.10)"/>
-          <circle cx="1090" cy="350" r="6" fill="rgba(255,255,255,0.28)"/>
-          <circle cx="1090" cy="500" r="6" fill="rgba(255,255,255,0.28)"/>
-          <text x="840" y="295" font-size="12" fill="rgba(255,255,255,0.35)">fridge</text>
-        </g>
+    <!-- Subtle interior hint (optional) -->
+    <rect x="128" y="198" width="144" height="344" rx="22" class="k-fill-softer" opacity="0.35"/>
+  </g>
 
-        <!-- Ice clickable (in fridge) -->
-        <g id="ice" class="clickable" tabindex="0" role="button" aria-label="Grab ice from fridge">
-          <rect x="860" y="450" width="110" height="80" rx="14" fill="rgba(190,230,255,0.14)" stroke="rgba(190,230,255,0.26)"/>
-          <rect x="874" y="466" width="34" height="28" rx="6" fill="rgba(190,230,255,0.55)"/>
-          <rect x="915" y="480" width="34" height="28" rx="6" fill="rgba(190,230,255,0.42)"/>
-          <text x="865" y="445" font-size="12" fill="rgba(255,255,255,0.35)">ice</text>
-        </g>
+  <!-- ===== COUNTER + BACKSPLASH STRIP ===== -->
+  <g id="counterRun">
+    <!-- Backsplash strip -->
+    <rect x="270" y="340" width="740" height="90" rx="0" class="k-fill-soft" opacity="0.55"/>
+    <!-- Counter line -->
+    <line x1="270" y1="430" x2="1010" y2="430" class="k-stroke"/>
+  </g>
 
-        <!-- Soda water clickable (in fridge) -->
-        <g id="soda" class="clickable" tabindex="0" role="button" aria-label="Grab soda water from fridge">
-          <rect x="1000" y="455" width="70" height="120" rx="18" fill="rgba(140,220,255,0.10)" stroke="rgba(140,220,255,0.22)"/>
-          <rect x="1018" y="440" width="34" height="18" rx="8" fill="rgba(255,255,255,0.16)" />
-          <text x="1004" y="445" font-size="12" fill="rgba(255,255,255,0.35)">soda</text>
-        </g>
+  <!-- ===== UPPER CABINETS (2 sets) ===== -->
+  <g id="upperCabinets">
+    <!-- Left upper cabinet (2 doors) -->
+    <rect x="300" y="150" width="250" height="120" rx="18" class="k-fill-white k-stroke"/>
+    <line x1="425" y1="150" x2="425" y2="270" class="k-stroke2"/>
+    <circle cx="400" cy="210" r="8" class="k-dot"/>
+    <circle cx="450" cy="210" r="8" class="k-dot"/>
 
-        <!-- Optional: a little window / plant for ambient -->
-        <g id="window" class="ambient" opacity="0.9">
-          <rect x="540" y="285" width="240" height="130" rx="18" fill="rgba(130,210,255,0.10)" stroke="rgba(255,255,255,0.10)" />
-          <line x1="660" y1="285" x2="660" y2="415" stroke="rgba(255,255,255,0.10)" />
-          <line x1="540" y1="350" x2="780" y2="350" stroke="rgba(255,255,255,0.10)" />
-        </g>
-      </svg>
+    <!-- Middle upper cabinet (2 doors) -->
+    <rect x="575" y="150" width="250" height="120" rx="18" class="k-fill-white k-stroke"/>
+    <line x1="700" y1="150" x2="700" y2="270" class="k-stroke2"/>
+    <circle cx="675" cy="210" r="8" class="k-dot"/>
+    <circle cx="725" cy="210" r="8" class="k-dot"/>
+
+    <!-- Window (2x2 panes) -->
+    <rect x="900" y="150" width="300" height="150" rx="18" class="k-fill-soft k-stroke"/>
+    <line x1="1050" y1="150" x2="1050" y2="300" class="k-stroke2"/>
+    <line x1="900" y1="225" x2="1200" y2="225" class="k-stroke2"/>
+  </g>
+
+  <!-- ===== RIGHT TALL CABINET / PANTRY ===== -->
+  <g id="rightPantry">
+    <rect x="1040" y="140" width="170" height="420" rx="22" class="k-fill-white k-stroke"/>
+    <!-- Shelf dividers -->
+    <line x1="1040" y1="240" x2="1210" y2="240" class="k-stroke2"/>
+    <line x1="1040" y1="340" x2="1210" y2="340" class="k-stroke2"/>
+    <line x1="1040" y1="440" x2="1210" y2="440" class="k-stroke2"/>
+  </g>
+
+  <!-- ===== OVEN / RANGE ===== -->
+  <g id="oven">
+    <!-- Outer -->
+    <rect x="300" y="370" width="230" height="160" rx="18" class="k-fill-white k-stroke"/>
+    <!-- Cooktop panel -->
+    <rect x="315" y="382" width="200" height="42" rx="14" class="k-fill-soft k-stroke2"/>
+    <!-- Knobs -->
+    <circle cx="350" cy="403" r="10" class="k-dot"/>
+    <circle cx="415" cy="403" r="10" class="k-dot"/>
+    <circle cx="480" cy="403" r="10" class="k-dot"/>
+    <!-- Oven window -->
+    <rect x="335" y="435" width="160" height="75" rx="12" class="k-fill-soft k-stroke2"/>
+  </g>
+
+  <!-- ===== LOWER CABINETS (3 segments) ===== -->
+  <g id="lowerCabinets">
+    <!-- Segment 1 (2 doors) -->
+    <rect x="540" y="430" width="220" height="110" rx="18" class="k-fill-white k-stroke"/>
+    <line x1="650" y1="430" x2="650" y2="540" class="k-stroke2"/>
+    <circle cx="620" cy="485" r="8" class="k-dot"/>
+    <circle cx="680" cy="485" r="8" class="k-dot"/>
+
+    <!-- Segment 2 (2 doors) -->
+    <rect x="770" y="430" width="220" height="110" rx="18" class="k-fill-white k-stroke"/>
+    <line x1="880" y1="430" x2="880" y2="540" class="k-stroke2"/>
+    <circle cx="850" cy="485" r="8" class="k-dot"/>
+    <circle cx="910" cy="485" r="8" class="k-dot"/>
+  </g>
+
+  <!-- ===== SINK ===== -->
+  <g id="sink">
+    <!-- Basin -->
+    <rect x="835" y="360" width="310" height="95" rx="18" class="k-fill-white k-stroke"/>
+    <rect x="870" y="382" width="240" height="55" rx="14" class="k-fill-soft k-stroke2"/>
+    <!-- Faucet -->
+    <path d="M1010 360
+             c 0 -30 35 -35 55 -20
+             c 18 12 18 38 -6 44
+             " class="k-none k-stroke"/>
+    <circle cx="1012" cy="360" r="6" class="k-dot"/>
+  </g>
+
+  <!-- =========================================================
+       CLICKABLE TARGETS (wired for your JS)
+       Required IDs: cup, ice, tequilaCabinet, soda
+       Keep these groups intact when editing!
+       ========================================================= -->
+
+  <!-- 1) CUP (on shelves / left of upper cabinets area).
+       We place it on the counter area near left side for visibility,
+       but still reads as "on shelves" in this simplified scene. -->
+  <g id="cup" class="clickable" tabindex="0" role="button" aria-label="Pick up cup">
+    <!-- glow on hover -->
+    <g class="hover-glow" filter="url(#softGlow)">
+      <path d="M0 0h1" opacity="0.001"/>
+    </g>
+
+    <!-- Cup drawing -->
+    <g transform="translate(460 310)">
+      <path d="M10 20 h90 l-12 130 h-66 l-12-130 Z" class="k-fill-white k-stroke"/>
+      <path d="M24 50 h62" class="k-none k-stroke2" opacity="0.45"/>
+      <!-- small shelf hint line behind cup -->
+      <line x1="-70" y1="170" x2="170" y2="170" class="k-stroke2" opacity="0.22"/>
+    </g>
+  </g>
+
+  <!-- 2) ICE (in left fridge). We make a visible ice bin in the lower door. -->
+  <g id="ice" class="clickable" tabindex="0" role="button" aria-label="Grab ice from fridge">
+    <g class="hover-glow" filter="url(#softGlow)">
+      <rect x="128" y="386" width="144" height="154" rx="22" fill="rgba(130,210,255,0.10)"/>
+    </g>
+
+    <!-- Ice bin -->
+    <g>
+      <rect x="145" y="410" width="110" height="90" rx="18" class="k-fill-soft k-stroke2" opacity="0.75"/>
+      <rect x="162" y="430" width="32" height="30" rx="8" fill="rgba(255,255,255,0.45)"/>
+      <rect x="197" y="445" width="34" height="30" rx="8" fill="rgba(255,255,255,0.35)"/>
+      <rect x="170" y="465" width="30" height="26" rx="8" fill="rgba(255,255,255,0.28)"/>
+    </g>
+  </g>
+
+  <!-- 3) TEQUILA (upper-right cabinet). Clicking the right-most upper cabinet door area. -->
+  <g id="tequilaCabinet" class="clickable" tabindex="0" role="button" aria-label="Open cabinet for tequila">
+    <g class="hover-glow" filter="url(#softGlow)">
+      <rect x="575" y="150" width="250" height="120" rx="18" fill="rgba(130,210,255,0.10)"/>
+    </g>
+
+    <!-- Bottle silhouette subtly inside the middle upper cabinet (right side) -->
+    <g transform="translate(725 168)">
+      <path d="M40 10
+               c 0 -6 20 -6 20 0
+               v 14
+               c 0 4 6 6 6 12
+               v 46
+               c 0 10 -38 10 -38 0
+               v -46
+               c 0 -6 6 -8 6 -12
+               Z"
+            fill="rgba(255,210,120,0.40)" stroke="rgba(18,32,44,0.55)" stroke-width="4" stroke-linejoin="round"/>
+      <rect x="40" y="22" width="20" height="10" rx="4" fill="rgba(255,255,255,0.25)"/>
+    </g>
+  </g>
+
+  <!-- 4) SODA (in left fridge). A tall bottle in upper door area. -->
+  <g id="soda" class="clickable" tabindex="0" role="button" aria-label="Grab soda water from fridge">
+    <g class="hover-glow" filter="url(#softGlow)">
+      <rect x="128" y="198" width="144" height="156" rx="22" fill="rgba(130,210,255,0.10)"/>
+    </g>
+
+    <g>
+      <path d="M205 230
+               c 0 -10 35 -10 35 0
+               v 18
+               c 0 6 10 8 10 18
+               v 80
+               c 0 18 -65 18 -65 0
+               v -80
+               c 0 -10 10 -12 10 -18
+               v -18 Z"
+            class="k-fill-soft k-stroke2" opacity="0.75"/>
+      <rect x="202" y="260" width="40" height="18" rx="9" fill="rgba(255,255,255,0.30)"/>
+      <circle cx="215" cy="322" r="5" fill="rgba(255,255,255,0.55)"/>
+      <circle cx="230" cy="345" r="4" fill="rgba(255,255,255,0.45)"/>
+      <circle cx="220" cy="370" r="3.5" fill="rgba(255,255,255,0.40)"/>
+    </g>
+  </g>
+</svg>
+
     </div>
   </div>
 
